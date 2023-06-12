@@ -6,7 +6,7 @@ use std::path::Path;
 use colored::Colorize;
 
 use crate::args::CliCommand;
-use crate::chunk::Chunk;
+use crate::chunk::{Chunk, self};
 use crate::chunk_type::ChunkType;
 use crate::png::Png;
 
@@ -53,16 +53,10 @@ pub fn execute_command(command: CliCommand) -> Result<(), Box<dyn std::error::Er
         } => {
             let mut png =
                 get_png(&file_path).unwrap_or_else(|_| panic!("File {} not found", &file_path));
-            
-            let chunk_bytes: Vec<u8> = Vec::new();
-            let chunk_bytes: Vec<u8> = chunk_bytes
-                .iter()
-                .chain(DEFAULT_CHUNK_TYPE.as_bytes())
-                .chain(message.as_bytes())
-                .copied()
-                .collect();
-
-            let new_chunk = Chunk::try_from(chunk_bytes.as_slice())?;
+        
+            let chunk_type = ChunkType::try_from(<[u8;4]>::try_from(DEFAULT_CHUNK_TYPE.as_bytes())?).unwrap();
+            print!("{}", chunk_type);
+            let new_chunk : Chunk = Chunk::new(chunk_type, message.into_bytes());
 
             png.append_chunk(new_chunk);
             let buf = png.as_bytes();

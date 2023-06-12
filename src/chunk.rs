@@ -5,7 +5,7 @@ use crate::{chunk_type::{ChunkType}, Error, Result};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Chunk {
-    length: usize,
+    length: u32,
     chunk_type: ChunkType,
     data: Vec<u8>,
     crc: u32,
@@ -20,11 +20,12 @@ impl Chunk {
 
     pub fn new(chunk_type: ChunkType, data: Vec<u8>) -> Self {
         let crc = Self::crc_checksum(&chunk_type, &data);
-        Self {length: data.len(), chunk_type: chunk_type, data: data, crc: crc}
+        let length = data.len() as u32;
+        Self {length: length, chunk_type: chunk_type, data: data, crc: crc}
     }
     
     pub fn length(&self) -> usize {
-        self.length
+        self.length as usize
     }
 
     pub fn chunk_type(&self) -> &ChunkType {
@@ -75,7 +76,7 @@ impl TryFrom<&[u8]> for Chunk {
             return Err(Box::from(ChunkError::InvalidChunkLength));
         }
 
-        let length = u32::from_be_bytes(value[0..4].try_into().unwrap()) as usize;
+        let length: usize = u32::from_be_bytes(value[0..4].try_into().unwrap()) as usize;
         if value.len() < length + Self::METADATA_BYTES_LEN {
             return Err(Box::from(ChunkError::InvalidChunkLength));
         }
@@ -92,10 +93,10 @@ impl TryFrom<&[u8]> for Chunk {
         }
 
         Ok(Self {
-            length,
-            chunk_type,
-            data,
-            crc,
+            length: length as u32,
+            chunk_type: chunk_type,
+            data: data,
+            crc: crc,
         })
 
     }
@@ -217,6 +218,7 @@ mod tests {
         assert_eq!(chunk.chunk_type().to_string(), String::from("RuSt"));
         assert_eq!(chunk_string, expected_chunk_string);
         assert_eq!(chunk.crc(), 2882656334);
+        assert_eq!(chunk_data, chunk.as_bytes());
     }
 
     #[test]
